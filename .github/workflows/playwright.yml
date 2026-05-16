@@ -51,6 +51,7 @@ jobs:
         composer install
         php artisan key:generate
         php artisan migrate --force
+        php artisan db:seed --force
         # Seed test users
         cp ../../tests-repo/scripts/seed_test_users.php ./
         php seed_test_users.php
@@ -66,7 +67,8 @@ jobs:
       working-directory: rentoflow_v2/mobileapp
       run: |
         flutter pub get
-        flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8080 &
+        flutter build web
+        npx serve build/web -l 8080 &
         
     - name: Setup Node
       uses: actions/setup-node@v4
