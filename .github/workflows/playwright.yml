@@ -1,37 +1,91 @@
-name: Playwright Tests
+name: RentoFlow E2E Tests
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: rentoflow_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        
     steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/setup-node@v4
+    - name: Checkout Tests Repo
+      uses: actions/checkout@v4
+      with:
+        path: tests-repo
+        
+    - name: Checkout RentoFlow_v2 Repo
+      uses: actions/checkout@v4
+      with:
+        repository: chkiran248/rentoflow_v2
+        path: rentoflow_v2
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, pdo
+        
+    - name: Setup Laravel Backend
+      working-directory: rentoflow_v2/superadmin
+      run: |
+        cp .env.example .env
+        sed -i 's/DB_DATABASE=laravel/DB_DATABASE=rentoflow_test/' .env
+        sed -i 's/DB_PASSWORD=/DB_PASSWORD=root/' .env
+        composer install
+        php artisan key:generate
+        php artisan migrate --force
+        # Seed test users
+        cp ../../tests-repo/scripts/seed_test_users.php ./
+        php seed_test_users.php
+        # Start server
+        php artisan serve --port=8100 &
+        
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        
+    - name: Setup Flutter Web App
+      working-directory: rentoflow_v2/mobileapp
+      run: |
+        flutter pub get
+        flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8080 &
+        
+    - name: Setup Node
+      uses: actions/setup-node@v4
       with:
         node-version: lts/*
         
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-      
-    # Note: To run E2E tests in CI against the Flutter web app, 
-    # you would need to add steps here to checkout the rentoflow_v2 repo, 
-    # start the backend Laravel server, and start the Flutter web server 
-    # before running the tests.
-    
-    - name: Run Playwright tests
+    - name: Install Playwright
+      working-directory: tests-repo
+      run: |
+        npm ci
+        npx playwright install --with-deps
+        
+    - name: Wait for services
+      run: |
+        sleep 20 # Wait for Laravel and Flutter servers to boot
+        
+    - name: Run Playwright Tests
+      working-directory: tests-repo
       run: npx playwright test
       
     - uses: actions/upload-artifact@v4
       if: always()
       with:
         name: playwright-report
-        path: playwright-report/
+        path: tests-repo/playwright-report/
         retention-days: 30
