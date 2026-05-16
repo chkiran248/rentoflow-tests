@@ -76,7 +76,7 @@ jobs:
     - name: Install Playwright
       working-directory: tests-repo
       run: |
-        npm ci
+        npm install
         npx playwright install --with-deps
         
     - name: Wait for services
