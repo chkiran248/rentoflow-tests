@@ -67,6 +67,7 @@ jobs:
       working-directory: rentoflow_v2/mobileapp
       run: |
         flutter pub get
+        flutter create . --platforms web
         flutter build web
         npx serve build/web -l 8080 &
         
