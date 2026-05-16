@@ -4,35 +4,35 @@ test.describe('Flutter Mobile App - Landlord Flow', () => {
   test.use({ baseURL: 'http://127.0.0.1:8080' });
 
   test('Landlord login and property management', async ({ page }) => {
+    // Inject Flutter configuration and skip onboarding/language screens via localStorage
     await page.addInitScript(() => {
       window.flutterConfiguration = { forceSemantics: true };
+      // Set SharedPreferences values directly in localStorage to bypass setup screens
+      // Prefix 'flutter.' is used by shared_preferences_web
+      window.localStorage.setItem('flutter.slang', '"en"');
+      window.localStorage.setItem('flutter.first_tour', 'false');
     });
+
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
-
-    // Handle Language Screen if present
-    try {
-      await page.waitForSelector('[aria-label*="English"]', { timeout: 5000 });
-      await page.click('[aria-label*="English"]');
-      await page.click('[aria-label="Save"], [aria-label="save"]');
-    } catch (e) { }
-
-    // Handle Onboarding Screen if present
-    try {
-      await page.waitForSelector('[aria-label="Skip"], [aria-label="skip"]', { timeout: 5000 });
-      await page.click('[aria-label="Skip"], [aria-label="skip"]');
-    } catch (e) { }
     
-    // Fill credentials using keyboard type (needed for Flutter semantics)
-    await page.click('[aria-label="Email"], [aria-label*="Email"]');
+    // Wait for the Email field to appear (it should be on the SignIn screen now)
+    // We use a regex for the label to handle "Email" vs "Email, Text Field" etc.
+    const emailField = page.locator('[aria-label*="Email"]');
+    await expect(emailField).toBeVisible({ timeout: 30000 });
+    
+    await emailField.click();
     await page.keyboard.type('test-landlord@rentoflow.in');
     
-    await page.click('[aria-label="Password"], [aria-label*="Password"]');
+    const passwordField = page.locator('[aria-label*="Password"]');
+    await passwordField.click();
     await page.keyboard.type('password');
     
-    await page.click('[aria-label="Sign In"], [aria-label="Sign in"]');
+    const signInButton = page.locator('[aria-label="Sign In"], [aria-label="Sign in"]');
+    await signInButton.click();
 
     // Verify dashboard loads
-    await expect(page.locator('[aria-label="My Property"], [aria-label*="My Property"]')).toBeVisible({ timeout: 15000 });
+    // Increased timeout for slow backend responses in CI
+    await expect(page.locator('[aria-label*="My Property"]')).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('[aria-label*="Dashboard"]')).toBeVisible();
   });
 });

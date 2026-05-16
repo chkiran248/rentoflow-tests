@@ -4,35 +4,32 @@ test.describe('Flutter Mobile App - Tenant Flow', () => {
   test.use({ baseURL: 'http://127.0.0.1:8080' });
 
   test('Tenant login and recommended properties', async ({ page }) => {
+    // Inject Flutter configuration and skip onboarding/language screens via localStorage
     await page.addInitScript(() => {
       window.flutterConfiguration = { forceSemantics: true };
+      // Set SharedPreferences values directly in localStorage to bypass setup screens
+      window.localStorage.setItem('flutter.slang', '"en"');
+      window.localStorage.setItem('flutter.first_tour', 'false');
     });
+
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
 
-    // Handle Language Screen if present
-    try {
-      await page.waitForSelector('[aria-label*="English"]', { timeout: 5000 });
-      await page.click('[aria-label*="English"]');
-      await page.click('[aria-label="Save"], [aria-label="save"]');
-    } catch (e) { }
+    // Wait for the Email field to appear (SignIn screen)
+    const emailField = page.locator('[aria-label*="Email"]');
+    await expect(emailField).toBeVisible({ timeout: 30000 });
 
-    // Handle Onboarding Screen if present
-    try {
-      await page.waitForSelector('[aria-label="Skip"], [aria-label="skip"]', { timeout: 5000 });
-      await page.click('[aria-label="Skip"], [aria-label="skip"]');
-    } catch (e) { }
-
-    // Fill credentials using keyboard type
-    await page.click('[aria-label="Email"], [aria-label*="Email"]');
+    await emailField.click();
     await page.keyboard.type('test-tenant@rentoflow.in');
     
-    await page.click('[aria-label="Password"], [aria-label*="Password"]');
+    const passwordField = page.locator('[aria-label*="Password"]');
+    await passwordField.click();
     await page.keyboard.type('password');
     
-    await page.click('[aria-label="Sign In"], [aria-label="Sign in"]');
+    const signInButton = page.locator('[aria-label="Sign In"], [aria-label="Sign in"]');
+    await signInButton.click();
 
     // Verify dashboard loads and Recommended Properties are visible
-    await expect(page.locator('[aria-label="Recommended Properties"], [aria-label*="Recommended"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[aria-label*="Recommended"]')).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('[aria-label*="Home"]')).toBeVisible();
   });
 });
