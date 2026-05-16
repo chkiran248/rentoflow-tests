@@ -18,6 +18,9 @@ $admin = User::firstOrCreate(
         'status' => 1
     ]
 );
+if (!$admin->hasRole('admin')) {
+    $admin->assignRole('admin');
+}
 
 // 2. Create Landlord
 $landlord = User::firstOrCreate(
@@ -29,6 +32,9 @@ $landlord = User::firstOrCreate(
         'status' => 1
     ]
 );
+if (!$landlord->hasRole('landlord')) {
+    $landlord->assignRole('landlord');
+}
 
 // 3. Create Tenant
 $tenant = User::firstOrCreate(
@@ -40,6 +46,9 @@ $tenant = User::firstOrCreate(
         'status' => 1
     ]
 );
+if (!$tenant->hasRole('tenant')) {
+    $tenant->assignRole('tenant');
+}
 
 // Ensure user details for tenant to prevent the null property array offset error
 UserDetail::firstOrCreate(

@@ -14,7 +14,7 @@ test.describe('Admin Web Dashboard', () => {
     await page.click('button[type="submit"]');
 
     // Verify successful login by checking URL or dashboard element
-    await expect(page).toHaveURL(/.*dashboard/);
+    await expect(page).toHaveURL(/.*admin.*/);
     await expect(page.locator('text=Test Admin').first()).toBeVisible();
   });
 });
