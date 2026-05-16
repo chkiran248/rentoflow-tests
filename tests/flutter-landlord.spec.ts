@@ -10,8 +10,18 @@ test.describe('Flutter Mobile App - Landlord Flow', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Click on Landlord/Owner option
-    await page.click('[aria-label="Owner"]', { timeout: 15000 });
+    // Handle Language Screen if present
+    try {
+      await page.waitForSelector('[aria-label*="English"]', { timeout: 5000 });
+      await page.click('[aria-label*="English"]');
+      await page.click('[aria-label="Save"], [aria-label="save"]');
+    } catch (e) { }
+
+    // Handle Onboarding Screen if present
+    try {
+      await page.waitForSelector('[aria-label="Skip"], [aria-label="skip"]', { timeout: 5000 });
+      await page.click('[aria-label="Skip"], [aria-label="skip"]');
+    } catch (e) { }
     
     // Fill credentials using keyboard type (needed for Flutter semantics)
     await page.click('[aria-label="Email"], [aria-label*="Email"]');
