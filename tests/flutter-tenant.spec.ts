@@ -4,19 +4,29 @@ test.describe('Flutter Mobile App - Tenant Flow', () => {
   test.use({ baseURL: 'http://127.0.0.1:8080' });
 
   test('Tenant login and recommended properties', async ({ page }) => {
-    // Inject Flutter configuration and skip onboarding/language screens via localStorage
+    // Inject Flutter configuration
     await page.addInitScript(() => {
       window.flutterConfiguration = { forceSemantics: true };
-      // Set SharedPreferences values directly in localStorage to bypass setup screens
-      window.localStorage.setItem('flutter.slang', '"en"');
-      window.localStorage.setItem('flutter.first_tour', 'false');
     });
 
     await page.goto('/');
 
+    // 1. Language Screen
+    const englishOption = page.locator('[aria-label*="English"]');
+    await expect(englishOption).toBeVisible({ timeout: 45000 });
+    await englishOption.click();
+    
+    const saveButton = page.locator('[aria-label="Save"], [aria-label="save"]');
+    await saveButton.click();
+
+    // 2. Onboarding Screen
+    const skipButton = page.locator('[aria-label="Skip"], [aria-label="skip"]');
+    await expect(skipButton).toBeVisible({ timeout: 15000 });
+    await skipButton.click();
+
     // Wait for the Email field to appear (SignIn screen)
     const emailField = page.locator('[aria-label*="Email"]');
-    await expect(emailField).toBeVisible({ timeout: 30000 });
+    await expect(emailField).toBeVisible({ timeout: 15000 });
 
     await emailField.click();
     await page.keyboard.type('test-tenant@rentoflow.in');
